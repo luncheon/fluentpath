@@ -1,0 +1,24 @@
+{
+  "name": "@luncheon/fluentpath",
+  "version": "0.0.1",
+  "description": "SVG freehand smooth drawing.",
+  "main": "index.js",
+  "prettier": {
+    "printWidth": 140,
+    "endOfLine": "lf",
+    "singleQuote": true,
+    "trailingComma": "all"
+  },
+  "scripts": {
+    "start": "esbuild --bundle --minify --outfile=index.js index.ts --serve --servedir=.",
+    "build": "esbuild --bundle --minify --outfile=index.js index.ts"
+  },
+  "devDependencies": {
+    "esbuild": "^0.13.15",
+    "prettier": "^2.5.0",
+    "typescript": "^4.5.2"
+  },
+  "dependencies": {
+    "@luncheon/simplify-svg-path": "^0.1.4"
+  }
+}
