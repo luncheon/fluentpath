@@ -10,7 +10,7 @@
     "trailingComma": "all"
   },
   "scripts": {
-    "start": "esbuild --bundle --minify --outfile=index.js index.ts --serve --servedir=.",
+    "start": "esbuild --bundle --minify --outfile=index.js index.ts --serve --servedir=. --sourcemap",
     "build": "esbuild --bundle --minify --outfile=index.js index.ts"
   },
   "devDependencies": {
