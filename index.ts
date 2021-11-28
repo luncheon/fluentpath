@@ -14,40 +14,35 @@ addEventListener('pointerdown', (event) => {
   const clientToSvgMatrix = svgElement.getScreenCTM()!.inverse();
   const createSvgPoint = (event: { clientX: number; clientY: number }) =>
     new DOMPoint(event.clientX, event.clientY).matrixTransform(clientToSvgMatrix);
+  const distanceThreshold = 4 / scale;
 
   const p = createSvgPoint(event);
-  const points: DOMPoint[] = [p];
-  let { x: prevX, y: prevY } = p;
-  let d = `M${prevX} ${prevY}`;
+  const lastNPointers = [p];
+  const points = [[p.x, p.y] as const];
+
+  let d = `M${p.x} ${p.y}`;
 
   const pathElement = document.createElementNS('http://www.w3.org/2000/svg', 'path');
   pathElement.setAttribute('d', d);
 
   const onPointerMove = (event: PointerEvent) => {
-    points.unshift(createSvgPoint(event));
-    points.length === 5 && points.pop();
-    const x = points.reduce((x, p) => x + p.x, 0) / points.length;
-    const y = points.reduce((y, p) => y + p.y, 0) / points.length;
-    if (Math.hypot(prevX - x, prevY - y) > 2) {
-      pathElement.setAttribute('d', (d += `L${(prevX = x).toFixed(2)} ${(prevY = y).toFixed(2)}`));
+    lastNPointers.unshift(createSvgPoint(event));
+    lastNPointers.length === 5 && lastNPointers.pop();
+    const x = lastNPointers.reduce((x, p) => x + p.x, 0) / lastNPointers.length;
+    const y = lastNPointers.reduce((y, p) => y + p.y, 0) / lastNPointers.length;
+    const [prevX, prevY] = points[points.length - 1]!;
+    if (Math.hypot(prevX - x, prevY - y) > distanceThreshold) {
+      pathElement.setAttribute('d', (d += `L${x} ${y}`));
+      points.push([x, y]);
     }
   };
   const onPointerUp = (event: PointerEvent) => {
     removeEventListeners();
     onPointerMove(event);
-    if (d.includes('L')) {
-      const points: [number, number][] = [];
-      const length = pathElement.getTotalLength();
-      const step = Math.max(0.2, Math.min(8, length * 0.02));
-      for (let i = 0; i <= length; i += step) {
-        const { x, y } = pathElement.getPointAtLength(i);
-        points.push([x, y]);
-      }
-      d = simplifySvgPath(points, { tolerance: 0.5 / scale, precision: scale > 2 ? 1 : 0 });
-    } else {
-      d += 'v0';
-    }
-    pathElement.setAttribute('d', d);
+    pathElement.setAttribute(
+      'd',
+      points.length === 1 ? d + 'v0' : simplifySvgPath(points, { tolerance: 0.5 / scale, precision: scale > 2 ? 1 : 0 }),
+    );
     pathElement.dispatchEvent(new CustomEvent('fluentpath:drawend', { bubbles: true }));
   };
   const onKeyDown = (event: KeyboardEvent) => event.keyCode === 27 && cancel();
