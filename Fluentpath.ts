@@ -47,19 +47,15 @@ export class Fluentpath {
     if (distance < this.distanceThreshold) {
       return this;
     }
-    if (points.length > 3) {
-      const [x3, y3] = points[points.length - 3]!;
+    if (points.length > 2) {
       const [x2, y2] = points[points.length - 2]!;
-      const r = Math.hypot(x1 - x2, y1 - y2) * 0.15;
-      const r2 = r / Math.hypot(x2 - x3, y2 - y3);
-      const r1 = r / Math.hypot(x - x1, y - y1);
-      if (points.length - fixedPointIndex > 8 && Math.abs(Math.atan2(y2 - y3, x2 - x3) - Math.atan2(y - y1, x - x1)) > 0.6) {
+      if (points.length - fixedPointIndex > 8 && Math.abs(Math.atan2(y2 - y1, x2 - x1) - Math.atan2(y1 - y, x1 - x)) > 0.4) {
         this.end();
       } else {
-        this.unfixedPath += F`C${x2 + (x2 - x3) * r2} ${y2 + (y2 - y3) * r2} ${x1 + (x1 - x) * r1} ${y1 + (y1 - y) * r1} ${x1} ${y1}`;
+        this.unfixedPath += F`L${x1} ${y1}`;
       }
-      this.d = this.fixedPath + this.unfixedPath + F`L${x} ${y}`;
     }
+    this.d = this.fixedPath + this.unfixedPath + F`L${x} ${y}`;
     points.push([x, y]);
     return this;
   }
