@@ -53,10 +53,11 @@ export class Fluentpath {
       const r = Math.hypot(x1 - x2, y1 - y2) * 0.15;
       const r2 = r / Math.hypot(x2 - x3, y2 - y3);
       const r1 = r / Math.hypot(x - x1, y - y1);
-      if (points.length - fixedPointIndex > 8 && Math.abs(Math.atan2(y2 - y3, x2 - x3) - Math.atan2(y - y1, x - x1)) > 0.4) {
+      if (points.length - fixedPointIndex > 8 && Math.abs(Math.atan2(y2 - y3, x2 - x3) - Math.atan2(y - y1, x - x1)) > 0.6) {
         this.end();
+      } else {
+        this.unfixedPath += F`C${x2 + (x2 - x3) * r2} ${y2 + (y2 - y3) * r2} ${x1 + (x1 - x) * r1} ${y1 + (y1 - y) * r1} ${x1} ${y1}`;
       }
-      this.unfixedPath += F`C${x2 + (x2 - x3) * r2} ${y2 + (y2 - y3) * r2} ${x1 + (x1 - x) * r1} ${y1 + (y1 - y) * r1} ${x1} ${y1}`;
       this.d = this.fixedPath + this.unfixedPath + F`L${x} ${y}`;
     }
     points.push([x, y]);
