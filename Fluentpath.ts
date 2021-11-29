@@ -16,7 +16,7 @@ export class Fluentpath {
   readonly points: [number, number][] = [];
   d = '';
 
-  private readonly lastNPointers: DOMPoint[] = [];
+  private readonly lastNPointers: { readonly x: number; readonly y: number }[] = [];
   private fixedPointIndex = 0;
   private fixedPath = '';
   private unfixedPath = '';
@@ -31,7 +31,7 @@ export class Fluentpath {
     this.precision = options?.precision ?? 5;
   }
 
-  add(point: DOMPoint) {
+  add(point: { readonly x: number; readonly y: number }) {
     const { F, lastNPointers, points, fixedPointIndex } = this;
     lastNPointers.unshift(point);
     if (lastNPointers.length === 1) {
