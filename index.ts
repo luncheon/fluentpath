@@ -1,4 +1,3 @@
-import simplifySvgPath from '@luncheon/simplify-svg-path';
 import { Fluentpath } from './Fluentpath';
 
 const findTargetSvg = (event: Event) => (event.target as Element).closest<SVGSVGElement>('svg[data-fluentpath]');
@@ -18,26 +17,16 @@ addEventListener(
     const createSvgPoint = (event: { clientX: number; clientY: number }) =>
       new DOMPoint(event.clientX, event.clientY).matrixTransform(clientToSvgMatrix);
 
-    const fluentpath = new Fluentpath({ distanceThreshold: 4 / scale }).add(createSvgPoint(event));
+    const fluentpath = new Fluentpath({ distanceThreshold: 4 / scale, tolerance: 0.5 / scale, precision: scale > 2 ? 1 : 0 }).add(
+      createSvgPoint(event),
+    );
     const pathElement = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     pathElement.setAttribute('d', fluentpath.d);
 
     const onPointerMove = (event: PointerEvent) => pathElement.setAttribute('d', fluentpath.add(createSvgPoint(event)).d);
     const onPointerUp = (event: PointerEvent) => {
       removeEventListeners();
-      onPointerMove(event);
-      const length = pathElement.getTotalLength();
-      if (length !== 0) {
-        const points: [number, number][] = [];
-        const step = Math.max(0.2, Math.min(8, length * 0.01));
-        for (let i = 0; i < length; i += step) {
-          const { x, y } = pathElement.getPointAtLength(i);
-          points.push([x, y]);
-        }
-        const last = pathElement.getPointAtLength(length);
-        points.push([last.x, last.y]);
-        pathElement.setAttribute('d', simplifySvgPath(points, { tolerance: 0.5 / scale, precision: scale > 2 ? 1 : 0 }));
-      }
+      pathElement.setAttribute('d', fluentpath.add(createSvgPoint(event)).end().d);
       pathElement.dispatchEvent(new CustomEvent('fluentpath:drawend', { bubbles: true }));
     };
     const onKeyDown = (event: KeyboardEvent) => event.keyCode === 27 && cancel();
