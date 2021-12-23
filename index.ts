@@ -17,16 +17,17 @@ addEventListener(
     const createSvgPoint = (event: { clientX: number; clientY: number }) =>
       new DOMPoint(event.clientX, event.clientY).matrixTransform(clientToSvgMatrix);
 
-    const fluentpath = new Fluentpath({ distanceThreshold: 4 / scale, tolerance: 0.5 / scale, precision: scale > 2 ? 1 : 0 }).add(
-      createSvgPoint(event),
-    );
     const pathElement = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    pathElement.setAttribute('d', fluentpath.d);
+    const fluentpath = new Fluentpath(pathElement, {
+      distanceThreshold: 4 / scale,
+      tolerance: 0.5 / scale,
+      precision: scale > 2 ? 1 : 0,
+    }).add(createSvgPoint(event));
 
-    const onPointerMove = (event: PointerEvent) => pathElement.setAttribute('d', fluentpath.add(createSvgPoint(event)).d);
+    const onPointerMove = (event: PointerEvent) => fluentpath.add(createSvgPoint(event));
     const onPointerUp = (event: PointerEvent) => {
       removeEventListeners();
-      pathElement.setAttribute('d', fluentpath.add(createSvgPoint(event)).end().d);
+      fluentpath.add(createSvgPoint(event)).end();
       pathElement.dispatchEvent(new CustomEvent('fluentpath:drawend', { bubbles: true }));
     };
     const onKeyDown = (event: KeyboardEvent) => event.keyCode === 27 && cancel();

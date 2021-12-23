@@ -13,18 +13,17 @@ export class Fluentpath {
   readonly tolerance: number;
   readonly precision: number;
 
-  readonly points: [number, number][] = [];
-  d = '';
-
   private readonly lastNPointers: { readonly x: number; readonly y: number }[] = [];
-  private fixedPointIndex = 0;
-  private fixedPath = '';
-  private unfixedPath = '';
+  private readonly points: [number, number][] = [];
 
-  private readonly F = (strings: readonly string[], ...values: readonly number[]) =>
-    values.map((value, i) => strings[i] + value.toFixed(this.precision)).join('') + strings[strings.length - 1];
+  private get d() {
+    return this.path.getAttribute('d') ?? '';
+  }
+  private set d(d: string) {
+    this.path.setAttribute('d', d);
+  }
 
-  constructor(options?: Partial<FluentpathOptions>) {
+  constructor(readonly path: SVGPathElement, options?: Partial<FluentpathOptions>) {
     this.smoothingPointCount = options?.smoothingPointCount ?? 4;
     this.distanceThreshold = options?.distanceThreshold ?? 4;
     this.tolerance = options?.tolerance ?? 2.5;
@@ -32,40 +31,46 @@ export class Fluentpath {
   }
 
   add(point: { readonly x: number; readonly y: number }) {
-    const { F, lastNPointers, points, fixedPointIndex } = this;
+    const { lastNPointers, points } = this;
     lastNPointers.unshift(point);
     if (lastNPointers.length === 1) {
-      this.d = (this.fixedPath = F`M${point.x} ${point.y}`) + 'v0';
+      this.d = `M${point.x} ${point.y}v0`;
       points.push([point.x, point.y]);
-      return this;
-    }
-    lastNPointers.length > this.smoothingPointCount && lastNPointers.pop();
-    const x = lastNPointers.reduce((x, p) => x + p.x, 0) / lastNPointers.length;
-    const y = lastNPointers.reduce((y, p) => y + p.y, 0) / lastNPointers.length;
-    const [x1, y1] = points[points.length - 1]!;
-    const distance = Math.hypot(x1 - x, y1 - y);
-    if (distance < this.distanceThreshold) {
-      return this;
-    }
-    if (points.length > 2) {
-      const [x2, y2] = points[points.length - 2]!;
-      if (points.length - fixedPointIndex > 8 && Math.abs(Math.atan2(y2 - y1, x2 - x1) - Math.atan2(y1 - y, x1 - x)) > 0.4) {
-        this.end();
-      } else {
-        this.unfixedPath += F`L${x1} ${y1}`;
+    } else {
+      lastNPointers.length > this.smoothingPointCount && lastNPointers.pop();
+      const x = lastNPointers.reduce((x, p) => x + p.x, 0) / lastNPointers.length;
+      const y = lastNPointers.reduce((y, p) => y + p.y, 0) / lastNPointers.length;
+      const [x1, y1] = points[points.length - 1]!;
+      const distance = Math.hypot(x1 - x, y1 - y);
+      if (distance > this.distanceThreshold) {
+        if (points.length > 3) {
+          const [x3, y3] = points[points.length - 3]!;
+          const [x2, y2] = points[points.length - 2]!;
+          const r = Math.hypot(x1 - x2, y1 - y2) * 0.15;
+          const r2 = r / Math.hypot(x2 - x3, y2 - y3);
+          const r1 = r / Math.hypot(x1 - x, y1 - y);
+          this.d += `C${x2 + (x2 - x3) * r2} ${y2 + (y2 - y3) * r2} ${x1 + (x1 - x) * r1} ${y1 + (y1 - y) * r1} ${x1} ${y1}`;
+        }
+        points.push([x, y]);
       }
     }
-    this.d = this.fixedPath + this.unfixedPath + F`L${x} ${y}`;
-    points.push([x, y]);
     return this;
   }
 
-  end() {
-    const { points, fixedPointIndex } = this;
-    if (fixedPointIndex !== points.length - 1) {
-      this.d = this.fixedPath += simplifySvgPath(points.slice(fixedPointIndex), this).replace(/^M\d+(\.\d+)?[, ]\d+(\.\d+)?/, '');
-      this.fixedPointIndex = points.length - 1;
-      this.unfixedPath = '';
+  end(): this {
+    const { path, points } = this;
+    const length = path.getTotalLength();
+    if (length > 3) {
+      const pathPoints: [number, number][] = [];
+      const step = Math.max(0.2, Math.min(8, length * 0.01));
+      for (let i = 0; i < length; i += step) {
+        const { x, y } = path.getPointAtLength(i);
+        pathPoints.push([x, y]);
+      }
+      const last = path.getPointAtLength(length);
+      pathPoints.push([last.x, last.y]);
+      pathPoints.push(points[points.length - 1]!);
+      path.setAttribute('d', simplifySvgPath(pathPoints, { tolerance: this.tolerance, precision: this.precision }));
     }
     return this;
   }
