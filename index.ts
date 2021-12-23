@@ -20,8 +20,8 @@ addEventListener(
     const pathElement = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     const fluentpath = new Fluentpath(pathElement, {
       distanceThreshold: 4 / scale,
-      tolerance: 0.5 / scale,
-      precision: scale > 2 ? 1 : 0,
+      tolerance: 1 / scale,
+      precision: scale > 2 ? 2 : 1,
     }).add(createSvgPoint(event));
 
     const onPointerMove = (event: PointerEvent) => fluentpath.add(createSvgPoint(event));
