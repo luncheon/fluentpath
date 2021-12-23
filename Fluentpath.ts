@@ -62,17 +62,16 @@ export class Fluentpath {
 
   end(): this {
     const { path, points } = this;
-    const length = path.getTotalLength();
-    if (length > 3) {
+    if (points.length > 3) {
+      const pathLength = path.getTotalLength();
       const pathPoints: [number, number][] = [];
-      const step = Math.max(0.2, Math.min(8, length * 0.01));
-      for (let i = 0; i < length; i += step) {
+      const step = Math.max(0.2, Math.min(8, pathLength * 0.01));
+      for (let i = 0; i < pathLength; i += step) {
         const { x, y } = path.getPointAtLength(i);
         pathPoints.push([x, y]);
       }
-      const last = path.getPointAtLength(length);
-      pathPoints.push([last.x, last.y]);
-      pathPoints.push(points[points.length - 1]!);
+      const lastPoint = path.getPointAtLength(pathLength);
+      pathPoints.push([lastPoint.x, lastPoint.y]);
       path.setAttribute('d', simplifySvgPath(pathPoints, { tolerance: this.tolerance, precision: this.precision }));
     }
     return this;
