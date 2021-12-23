@@ -78,7 +78,11 @@ export class Fluentpath {
       pathPoints.push([lastPoint.x, lastPoint.y]);
       this.d = simplifySvgPath(pathPoints, { tolerance: this.tolerance, precision: this.precision });
     } else if (points.length > 1) {
-      this.d = points.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${this.round(x)} ${this.round(y)}`).join();
+      this.d = points
+        .map(([x, y], i, points) =>
+          i === 0 ? `M${this.round(x)} ${this.round(y)}` : `l${this.round(x - points[i - 1]![0])} ${this.round(y - points[i - 1]![1])}`,
+        )
+        .join();
     }
     return this;
   }
