@@ -27,9 +27,9 @@ addEventListener(
     }).add(createSvgPoint(event));
 
     const onPointerMove = (event: PointerEvent) => fluentpath.add(createSvgPoint(event));
-    const onPointerUp = () => {
+    const onPointerUp = (event: PointerEvent) => {
       removeEventListeners();
-      fluentpath.end();
+      fluentpath.add(createSvgPoint(event)).end();
       pathElement.dispatchEvent(new CustomEvent('fluentpath:drawend', { bubbles: true }));
     };
     const onKeyDown = (event: KeyboardEvent) => event.keyCode === 27 && cancel();

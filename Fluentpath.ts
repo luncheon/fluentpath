@@ -18,6 +18,8 @@ export class Fluentpath {
   private readonly lastNPointers: { readonly x: number; readonly y: number }[] = [];
   private readonly points: [number, number][] = [];
 
+  private readonly round;
+
   private get d() {
     return this.path.getAttribute('d') ?? '';
   }
@@ -31,13 +33,15 @@ export class Fluentpath {
     this.inertiaFactor = options?.inertiaFactor ?? 0.1;
     this.tolerance = options?.tolerance ?? 2.5;
     this.precision = options?.precision ?? 5;
+    const e = 10 ** this.precision;
+    this.round = (value: number) => Math.round(value * e) / e;
   }
 
   add(point: { readonly x: number; readonly y: number }) {
     const { lastNPointers, points } = this;
     lastNPointers.unshift(point);
     if (lastNPointers.length === 1) {
-      this.d = `M${point.x} ${point.y}v0`;
+      this.d = `M${this.round(point.x)} ${this.round(point.y)}v0`;
       points.push([point.x, point.y]);
     } else {
       lastNPointers.length > this.smoothingPointCount && lastNPointers.pop();
@@ -62,7 +66,7 @@ export class Fluentpath {
 
   end(): this {
     const { path, points } = this;
-    if (points.length > 3) {
+    if (points.length > 4) {
       const pathLength = path.getTotalLength();
       const pathPoints: [number, number][] = [];
       const step = Math.max(0.2, Math.min(8, pathLength * 0.01));
@@ -72,7 +76,9 @@ export class Fluentpath {
       }
       const lastPoint = path.getPointAtLength(pathLength);
       pathPoints.push([lastPoint.x, lastPoint.y]);
-      path.setAttribute('d', simplifySvgPath(pathPoints, { tolerance: this.tolerance, precision: this.precision }));
+      this.d = simplifySvgPath(pathPoints, { tolerance: this.tolerance, precision: this.precision });
+    } else if (points.length > 1) {
+      this.d = points.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${this.round(x)} ${this.round(y)}`).join();
     }
     return this;
   }
