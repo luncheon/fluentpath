@@ -3,6 +3,7 @@ import simplifySvgPath from '@luncheon/simplify-svg-path';
 export interface FluentpathOptions {
   readonly smoothingPointCount: number;
   readonly distanceThreshold: number;
+  readonly inertiaFactor: number;
   readonly tolerance: number;
   readonly precision: number;
 }
@@ -10,6 +11,7 @@ export interface FluentpathOptions {
 export class Fluentpath {
   readonly smoothingPointCount: number;
   readonly distanceThreshold: number;
+  readonly inertiaFactor: number;
   readonly tolerance: number;
   readonly precision: number;
 
@@ -26,6 +28,7 @@ export class Fluentpath {
   constructor(readonly path: SVGPathElement, options?: Partial<FluentpathOptions>) {
     this.smoothingPointCount = options?.smoothingPointCount ?? 4;
     this.distanceThreshold = options?.distanceThreshold ?? 4;
+    this.inertiaFactor = options?.inertiaFactor ?? 0.1;
     this.tolerance = options?.tolerance ?? 2.5;
     this.precision = options?.precision ?? 5;
   }
@@ -46,7 +49,7 @@ export class Fluentpath {
         if (points.length > 3) {
           const [x3, y3] = points[points.length - 3]!;
           const [x2, y2] = points[points.length - 2]!;
-          const r = Math.hypot(x1 - x2, y1 - y2) * 0.15;
+          const r = Math.hypot(x1 - x2, y1 - y2) * this.inertiaFactor;
           const r2 = r / Math.hypot(x2 - x3, y2 - y3);
           const r1 = r / Math.hypot(x1 - x, y1 - y);
           this.d += `C${x2 + (x2 - x3) * r2} ${y2 + (y2 - y3) * r2} ${x1 + (x1 - x) * r1} ${y1 + (y1 - y) * r1} ${x1} ${y1}`;

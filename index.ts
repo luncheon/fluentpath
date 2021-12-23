@@ -1,6 +1,7 @@
 import { Fluentpath } from './Fluentpath';
 
 const findTargetSvg = (event: Event) => (event.target as Element).closest<SVGSVGElement>('svg[data-fluentpath]');
+const inertiaFactor = +new URLSearchParams(location.search).get('inertia')! || 0.15;
 
 addEventListener(
   'pointerdown',
@@ -22,6 +23,7 @@ addEventListener(
       distanceThreshold: 4 / scale,
       tolerance: 1 / scale,
       precision: scale > 2 ? 2 : 1,
+      inertiaFactor,
     }).add(createSvgPoint(event));
 
     const onPointerMove = (event: PointerEvent) => fluentpath.add(createSvgPoint(event));
