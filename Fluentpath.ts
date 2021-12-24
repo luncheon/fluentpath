@@ -15,7 +15,7 @@ export class Fluentpath {
   readonly tolerance: number;
   readonly precision: number;
 
-  private readonly lastNPointers: { readonly x: number; readonly y: number }[] = [];
+  private wma?: [number, number];
   private readonly points: [number, number][] = [];
 
   private readonly round;
@@ -37,29 +37,26 @@ export class Fluentpath {
     this.round = (value: number) => Math.round(value * e) / e;
   }
 
-  add(point: { readonly x: number; readonly y: number }) {
-    const { lastNPointers, points } = this;
-    lastNPointers.unshift(point);
-    if (lastNPointers.length === 1) {
-      this.d = `M${this.round(point.x)} ${this.round(point.y)}v0`;
-      points.push([point.x, point.y]);
-    } else {
-      lastNPointers.length > this.smoothingPointCount && lastNPointers.pop();
-      const x = lastNPointers.reduce((x, p) => x + p.x, 0) / lastNPointers.length;
-      const y = lastNPointers.reduce((y, p) => y + p.y, 0) / lastNPointers.length;
+  add({ x, y }: { readonly x: number; readonly y: number }) {
+    const { points, wma } = this;
+    if (wma) {
+      const [x0, y0] = (this.wma = [(wma[0] + x) * 0.5, (wma[1] + y) * 0.5]);
       const [x1, y1] = points[points.length - 1]!;
-      const distance = Math.hypot(x1 - x, y1 - y);
-      if (distance > this.distanceThreshold) {
+      const d01 = Math.hypot(x0 - x1, y0 - y1);
+      if (d01 > this.distanceThreshold) {
         if (points.length > 3) {
           const [x3, y3] = points[points.length - 3]!;
           const [x2, y2] = points[points.length - 2]!;
           const r = Math.hypot(x1 - x2, y1 - y2) * this.inertiaFactor;
           const r2 = r / Math.hypot(x2 - x3, y2 - y3);
-          const r1 = r / Math.hypot(x1 - x, y1 - y);
-          this.d += `C${x2 + (x2 - x3) * r2} ${y2 + (y2 - y3) * r2} ${x1 + (x1 - x) * r1} ${y1 + (y1 - y) * r1} ${x1} ${y1}`;
+          const r1 = r / d01;
+          this.d += `C${x2 + (x2 - x3) * r2} ${y2 + (y2 - y3) * r2} ${x1 + (x1 - x0) * r1} ${y1 + (y1 - y0) * r1} ${x1} ${y1}`;
         }
-        points.push([x, y]);
+        points.push([x0, y0]);
       }
+    } else {
+      this.d = `M${this.round(x)} ${this.round(y)}v0`;
+      points.push((this.wma = [x, y]));
     }
     return this;
   }
