@@ -2,6 +2,22 @@ import { Fluentpath } from './Fluentpath';
 
 const findTargetSvg = (event: Event) => (event.target as Element).closest<SVGSVGElement>('svg[data-fluentpath]');
 const inertiaFactor = +new URLSearchParams(location.search).get('inertia')! || 0.15;
+const createCircle = (() => {
+  const circleBase = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  circleBase.setAttribute('stroke', 'none');
+  circleBase.setAttribute('fill', 'red');
+  circleBase.setAttribute('r', '3');
+  circleBase.setAttribute('opacity', '0.2');
+  circleBase.style.transition = 'opacity 8s ease-out';
+  return (p: { readonly x: number; readonly y: number }) => {
+    const circle = circleBase.cloneNode() as typeof circleBase;
+    circle.setAttribute('cx', p.x as string & number);
+    circle.setAttribute('cy', p.y as string & number);
+    requestAnimationFrame(() => circle.setAttribute('opacity', '0.04'));
+    setTimeout(() => circle.remove(), 16_000);
+    return circle;
+  };
+})();
 
 addEventListener(
   'pointerdown',
@@ -15,8 +31,11 @@ addEventListener(
     }
     const scale = svgElement.getCTM()!.a * visualViewport.scale;
     const clientToSvgMatrix = svgElement.getScreenCTM()!.inverse();
-    const createSvgPoint = (event: { clientX: number; clientY: number }) =>
-      new DOMPoint(event.clientX, event.clientY).matrixTransform(clientToSvgMatrix);
+    const createSvgPoint = (event: { clientX: number; clientY: number }) => {
+      const p = new DOMPoint(event.clientX, event.clientY).matrixTransform(clientToSvgMatrix);
+      svgElement.appendChild(createCircle(p));
+      return p;
+    };
 
     const pathElement = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     const fluentpath = new Fluentpath(pathElement, {
