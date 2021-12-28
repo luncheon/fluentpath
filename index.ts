@@ -1,7 +1,22 @@
-import { Fluentpath } from './Fluentpath';
+import { Fluentpath, FluentpathOptions } from './Fluentpath';
 
-const findTargetSvg = (event: Event) => (event.target as Element).closest<SVGSVGElement>('svg[data-fluentpath]');
-const inertiaFactor = +new URLSearchParams(location.search).get('inertia')! || 0.15;
+const findTargetSvg = (event: Event): [SVGSVGElement | null, Partial<FluentpathOptions>] => {
+  const svgElement = (event.target as Element).closest<SVGSVGElement>('svg[data-fluentpath]');
+  const options: Record<string, number> = {};
+  const optionsString = svgElement?.getAttribute('data-fluentpath');
+  if (optionsString) {
+    for (const s of optionsString.split(';') ?? []) {
+      const index = s.indexOf(':');
+      const key = s
+        .slice(0, index)
+        .trim()
+        .replace(/[a-zA-Z0-9_]-[a-z]/g, ($0) => $0[0] + $0[2]!.toUpperCase());
+      key && (options[key] = +s.slice(index + 1).trim());
+    }
+  }
+  return [svgElement, options];
+};
+
 const createCircle = (() => {
   const circleBase = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
   circleBase.setAttribute('stroke', 'none');
@@ -9,10 +24,11 @@ const createCircle = (() => {
   circleBase.setAttribute('r', '3');
   circleBase.setAttribute('opacity', '0.2');
   circleBase.style.transition = 'opacity 8s ease-out';
-  return (p: { readonly x: number; readonly y: number }) => {
+  return (p: { readonly x: number; readonly y: number; readonly color?: string }) => {
     const circle = circleBase.cloneNode() as typeof circleBase;
     circle.setAttribute('cx', p.x as string & number);
     circle.setAttribute('cy', p.y as string & number);
+    p.color && circle.setAttribute('fill', p.color);
     requestAnimationFrame(() => circle.setAttribute('opacity', '0.04'));
     setTimeout(() => circle.remove(), 16_000);
     return circle;
@@ -25,11 +41,10 @@ addEventListener(
     if (event.button !== 0) {
       return;
     }
-    const svgElement = findTargetSvg(event);
+    const [svgElement, fluentpathOptions] = findTargetSvg(event);
     if (!svgElement) {
       return;
     }
-    const scale = svgElement.getCTM()!.a * visualViewport.scale;
     const clientToSvgMatrix = svgElement.getScreenCTM()!.inverse();
     const createSvgPoint = (event: { clientX: number; clientY: number }) => {
       const p = new DOMPoint(event.clientX, event.clientY).matrixTransform(clientToSvgMatrix);
@@ -38,14 +53,23 @@ addEventListener(
     };
 
     const pathElement = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    const fluentpath = new Fluentpath(pathElement, {
-      distanceThreshold: 4 / scale,
-      tolerance: 1 / scale,
-      precision: scale > 2 ? 2 : 1,
-      inertiaFactor,
-    }).add(createSvgPoint(event));
+    const fluentpath = new Fluentpath(pathElement, fluentpathOptions).add(createSvgPoint(event));
+    console.log(
+      new Date().toISOString().replace(/.*T(.*)Z/, (_0, _1) => _1),
+      fluentpath,
+    );
 
-    const onPointerMove = (event: PointerEvent) => fluentpath.add(createSvgPoint(event));
+    const onPointerMove = (event: PointerEvent) => {
+      const { points } = fluentpath as unknown as { readonly points: readonly (readonly [number, number])[] };
+      const pointCount = points.length;
+
+      fluentpath.add(createSvgPoint(event));
+
+      if (points.length > pointCount) {
+        const [x, y] = points[points.length - 1]!;
+        svgElement.appendChild(createCircle({ x, y, color: 'blue' }));
+      }
+    };
     const onPointerUp = (event: PointerEvent) => {
       removeEventListeners();
       fluentpath.add(createSvgPoint(event)).end();
