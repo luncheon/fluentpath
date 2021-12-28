@@ -15,17 +15,22 @@ export class Fluentpath {
 
   private readonly points: [number, number][] = [];
   private wma?: [number, number];
+  private prev?: [number, number];
   private _d = '';
 
   constructor(readonly path: SVGPathElement, options?: Partial<FluentpathOptions>) {
     this.distanceThreshold = options?.distanceThreshold ?? 4;
-    this.inertiaFactor = options?.inertiaFactor ?? 0.1;
+    this.inertiaFactor = options?.inertiaFactor ?? 0.15;
     this.tolerance = options?.tolerance ?? 2.5;
     this.precision = options?.precision ?? 5;
   }
 
-  add({ x, y }: { readonly x: number; readonly y: number }) {
-    const { path, points, wma } = this;
+  add({ x, y }: { readonly x: number; readonly y: number }): this {
+    const { path, points, prev, wma } = this;
+    if (prev && Math.hypot(prev[0] - x, prev[1] - y) < this.distanceThreshold) {
+      return this;
+    }
+    this.prev = [x, y];
     if (wma) {
       const [x0, y0] = (this.wma = [(wma[0] + x) * 0.5, (wma[1] + y) * 0.5]);
       const [x1, y1] = points[points.length - 1]!;
