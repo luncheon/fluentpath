@@ -105,7 +105,7 @@ addEventListener(
 // iOS, iPadOS
 if ('GestureEvent' in self) {
   // disable text selection loupe
-  addEventListener('touchmove', (e) => e.touches.length === 1 && findTargetSvg(e) && e.preventDefault(), { passive: false });
+  addEventListener('touchmove', (e) => e.touches.length === 1 && findTargetSvg(e)[0] && e.preventDefault(), { passive: false });
   // disable double tap zoom
-  addEventListener('touchend', (e) => findTargetSvg(e) && e.preventDefault(), { passive: false });
+  addEventListener('touchend', (e) => findTargetSvg(e)[0] && e.preventDefault(), { passive: false });
 }
