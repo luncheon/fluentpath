@@ -41,16 +41,12 @@
         stroke-linecap="round"
         style="flex: auto; align-self: stretch; border: 1px solid currentColor"
       ></svg>
-      <section
-        id="fluentpath-parameters"
-        style="height: max-content; display: grid; grid-template-columns: max-content max-content; gap: 8px; justify-items: flex-end"
-      >
-        <label>distanceThreshold</label>
-        <input type="number" style="width: 8em" name="distanceThreshold" value="4" min="1" />
-        <label>inertiaFactor</label>
-        <input type="number" style="width: 8em" name="inertiaFactor" value="0.15" min="0" max="1" step=".05" />
-        <label>tolerance</label>
-        <input type="number" style="width: 8em" name="tolerance" value="1" min="0" step=".5" />
+      <section id="fluentpath-parameters">
+        <label style="cursor: pointer">
+          <input type="checkbox" id="show-pointer-point">
+          trace pointer
+        </label>
+        <div></div>
         <label>precision</label>
         <input type="number" style="width: 8em" name="precision" value="1" min="0" />
       </section>
@@ -61,7 +57,7 @@
       addEventListener('fluentpath:drawend', ({ target: el }) => el.setAttribute('opacity', 0.05));
       const setParameters = () => {
         const p = (name) => `${name}:${document.getElementsByName(name)[0].valueAsNumber};`;
-        const options = ['distanceThreshold', 'inertiaFactor', 'tolerance', 'precision'].map(p).join('');
+        const options = ['precision'].map(p).join('');
         document.querySelector('[data-fluentpath]').setAttribute('data-fluentpath', options);
       };
       document.getElementById('fluentpath-parameters').addEventListener('change', setParameters);
