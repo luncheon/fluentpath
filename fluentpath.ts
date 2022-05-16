@@ -1,5 +1,6 @@
 export interface FluentpathOptions {
-  readonly precision: number;
+  readonly precision?: number;
+  readonly smooth?: (p: Point) => Point;
 }
 
 interface Point {
@@ -30,28 +31,26 @@ export const exponentialMovingAveragePoint = (multiplier: number) => {
     (wma = wma === undefined ? p : { x: wma.x * (1 - multiplier) + p.x * multiplier, y: wma.y * (1 - multiplier) + p.y * multiplier });
 };
 
-export const fluentpath = ({
-  precision = 5,
-  smooth = exponentialMovingAveragePoint(0.75),
-}: { readonly precision?: number; readonly smooth?: (p: Point) => Point } = {}) => {
+export const fluentpath = ({ precision = 5, smooth = exponentialMovingAveragePoint(0.75) }: FluentpathOptions = {}) => {
   let d = '';
   const points: Point[] = [];
   const e = 10 ** precision;
   const round = (value: number) => Math.round(value * e) / e;
   return (p: Point, last?: boolean) => {
-    const p1 = smooth(p);
-    points.push(p1);
     const len = points.length;
-    if (len === 1) {
+    const p1 = smooth(p);
+    const p2 = points[len - 1];
+    const p3 = points[len - 2];
+    const p4 = points[len - 3];
+    points.push(p1);
+    if (!p2) {
       return `${(d = `M${round(p1.x)} ${round(p1.y)}`)}v0`;
     }
-    if (len === 2) {
-      return `${d}l${round(p1.x - points[0]!.x)} ${round(p1.y - points[0]!.y)}`;
+    if (!p3) {
+      return last ? `${d}l${round(p.x - p2.x)} ${round(p.y - p2.y)}` : `${d}l${round(p1.x - p2.x)} ${round(p1.y - p2.y)}`;
     }
-    const p2 = points[len - 2]!;
-    const p3 = points[len - 3]!;
-    if (len > 4) {
-      d += cubicBezierString(points[len - 4]!, p3, p2, p1, round);
+    if (p4) {
+      d += cubicBezierString(p4, p3, p2, p1, round);
     }
     const temp = d + cubicBezierString(p3, p2, p1, p, round);
     return last ? temp + cubicBezierString(p2, p1, p, { x: p.x + p.x - p1.x, y: p.y + p.y - p1.y }, round) : temp;
